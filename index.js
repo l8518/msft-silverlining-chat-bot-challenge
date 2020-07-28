@@ -15,7 +15,7 @@ const restify = require('restify');
 const { BotFrameworkAdapter } = require('botbuilder');
 
 // This bot's main dialog.
-const { TeamsConversationBot } = require('./bots/teamsConversationBot');
+const { TeamsConversationBot } = require('./bot');
 
 // Create HTTP server
 const server = restify.createServer();
@@ -56,12 +56,6 @@ adapter.onTurnError = async (context, error) => {
 
 // Create the bot that will handle incoming messages.
 const bot = new TeamsConversationBot();
-
-// Create HTTP server.
-const server = restify.createServer();
-server.listen(process.env.port || process.env.PORT || 3978, function() {
-    console.log(`\n${ server.name } listening to ${ server.url }`);
-});
 
 // Listen for incoming requests.
 server.post('/api/messages', (req, res) => {
