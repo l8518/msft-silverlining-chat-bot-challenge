@@ -15,7 +15,7 @@ const restify = require('restify');
 const { BotFrameworkAdapter } = require('botbuilder');
 
 // This bot's main dialog.
-const { EchoBot } = require('./bot');
+const { TeamsConversationBot } = require('./bots/teamsConversationBot');
 
 // Create HTTP server
 const server = restify.createServer();
@@ -34,11 +34,11 @@ const adapter = new BotFrameworkAdapter({
     openIdMetadata: process.env.BotOpenIdMetadata
 });
 
-// Catch-all for errors.
-const onTurnErrorHandler = async (context, error) => {
+adapter.onTurnError = async (context, error) => {
     // This check writes out errors to console log .vs. app insights.
     // NOTE: In production environment, you should consider logging this to Azure
-    //       application insights.
+    //       application insights. See https://aka.ms/bottelemetry for telemetry 
+    //       configuration instructions.
     console.error(`\n [onTurnError] unhandled error: ${ error }`);
 
     // Send a trace activity, which will be displayed in Bot Framework Emulator
@@ -54,17 +54,19 @@ const onTurnErrorHandler = async (context, error) => {
     await context.sendActivity('To continue to run this bot, please fix the bot source code.');
 };
 
-// Set the onTurnError for the singleton BotFrameworkAdapter.
-adapter.onTurnError = onTurnErrorHandler;
+// Create the bot that will handle incoming messages.
+const bot = new TeamsConversationBot();
 
-// Create the main dialog.
-const myBot = new EchoBot();
+// Create HTTP server.
+const server = restify.createServer();
+server.listen(process.env.port || process.env.PORT || 3978, function() {
+    console.log(`\n${ server.name } listening to ${ server.url }`);
+});
 
 // Listen for incoming requests.
 server.post('/api/messages', (req, res) => {
     adapter.processActivity(req, res, async (context) => {
-        // Route to main dialog.
-        await myBot.run(context);
+        await bot.run(context);
     });
 });
 
