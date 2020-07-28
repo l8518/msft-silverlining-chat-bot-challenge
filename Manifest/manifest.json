@@ -1,0 +1,66 @@
+{
+    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.7/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.7",
+    "version": "1.0.0",
+    "id": "<<APP-ID>>", 
+    "packageName": "com.silverliningchatbotchallenge.growthbot",
+    "developer": {
+        "name": "Developer",
+        "websiteUrl": "https://example.com/",
+        "privacyUrl": "https://example.com/",
+        "termsOfUseUrl": "https://example.com/"
+    },
+    "icons": {
+        "color": "color.png",
+        "outline": "outline.png"
+    },
+    "name": {
+        "short": "Growth Bot",
+        "full": "Growth Bot For Microsoft Teams"
+    },
+    "description": {
+        "short": "A Growth Bot",
+        "full": "A Growth Bot"
+    },
+    "accentColor": "#FFFFFF",
+    "bots": [
+        {
+            "botId": "<<BOT ID>>",
+            "scopes": [
+                "personal",
+                "team",
+                "groupchat"
+            ],
+            "supportsFiles": false,
+            "isNotificationOnly": false,
+            "commandLists": [
+                {
+                  "scopes": [
+                    "personal",
+                    "groupchat",
+                    "team"
+                  ],
+                  "commands": [
+                    {
+                      "title": "MentionMe",
+                      "description": "Sends message with @mention of the sender"
+                    },
+                    {
+                      "title": "Show Welcome",
+                      "description": "Shows the welcome card"
+                    },
+                    {
+                      "title": "MessageAllMembers",
+                      "description": "Send 1 to 1 message to all members of the current conversation"
+                    }
+                  ]
+                }
+              ]
+        }
+    ],
+    "permissions": [
+        "identity",
+        "messageTeamMembers"
+    ],
+    "validDomains": []
+}
