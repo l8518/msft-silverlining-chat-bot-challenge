@@ -108,10 +108,8 @@ class TeamsConversationBot extends TeamsActivityHandler {
             const recognizerResult = await dispatchRecognizer.recognize(context);
             const intent = LuisRecognizer.topIntent(recognizerResult);
 
-            
             // If Asked Data Protection:
             if (conversationData.askedForDataProtection) {
-                console.log(intent)
                 switch (intent) {
                     case 'yes':
                         await context.sendActivity(`Okay, I will delete all personal data related to you!`);
@@ -127,7 +125,6 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
                 await next();
                 return;
-
             }
 
             // If an answer was received from QnA Maker, send the answer back to the user.
@@ -136,7 +133,6 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
             // If no answers were returned from QnA Maker, reply with help.
             } else {
-
                 switch (intent) {
                     case 'anxiety':
 
@@ -183,16 +179,11 @@ class TeamsConversationBot extends TeamsActivityHandler {
                     case 'data_protection':
                         conversationData.askedForDataProtection = true;
                         await this.sendSuggestedActions(context);
-                        //await this.processDataProtection(context, recognizerResult, conversationData);
                         break;
 
                     default:
-
-                        // TODO: Do something with bing?
-                        console.log(`Dispatch unrecognized intent: ${ intent }.`);
-                        await context.sendActivity(`Sorry I did not understand you probably. However, I am still learning to understand you better! (feels like ${ intent }) \n However, see what I can do.`);
-
-                        // TODO: Show overview of commands (intent) + bing results
+                        context.sendActivity({ attachments: [this.createThumbnailCard(recognizerResult.text)] });
+                        await this.sendSuggestedActions2(context);
                         break;
                     }
             }
@@ -254,6 +245,26 @@ class TeamsConversationBot extends TeamsActivityHandler {
         }
         return a;
     }
+    async sendSuggestedActions2(turnContext){
+        var reply = MessageFactory.suggestedActions(['I feel anxious', 'I feel lonely', 'I am a bit overwhelmed.', 'I feel great.'], '');
+        await turnContext.sendActivity(reply);
+    }
+    createThumbnailCard(query) {
+        return CardFactory.thumbnailCard(
+            'GrowthBot could not support you',
+            [{ url: 'https://github.com/l8518/msft-silverlining-chat-bot-challenge/raw/master/GrowthBotLogo.png' }],
+            [{
+                type: 'openUrl',
+                title: 'Search with Bing',
+                value: 'https://www.bing.com/search?q='+ query
+            }],
+            {
+                subtitle: 'We are continually learning and will support more.',
+                text: 'Currently, growth bot supports remote learners mentally. Click Search with Bing to be redirected to Bing. If you need support emotionally, choose one of the options below.'
+            }
+        );
+    }
+
 }
 
 module.exports.TeamsConversationBot = TeamsConversationBot;
