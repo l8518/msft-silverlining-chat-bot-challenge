@@ -72,6 +72,12 @@ class TeamsConversationBot extends TeamsActivityHandler {
             } else {
 
                 //luis and bing api
+                
+                // TODO: 
+                // intent handling
+                // with overview on commands (intent)
+                // with alternative of using the bing api?
+                
 
                 await context.sendActivity('No QnA Maker answers were found.');
                 // await this.getSingleMember(context, 'No QnA Maker answers were found.');
