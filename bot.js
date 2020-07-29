@@ -65,7 +65,17 @@ class TeamsConversationBot extends TeamsActivityHandler {
             // If Asked Data Protection:
             if (conversationData.askedForDataProtection) {
 
-                await context.sendActivity(`you selected yes: ${ intent }.`);
+                switch (intent) {
+                    case 'yes':
+                        await context.sendActivity(`Okay, I will delete all personal data related to you!`);
+                        break;
+                    case 'no':
+                        await context.sendActivity(`Nice, I like that you want to keep being a friend of mine ☺!`);
+                        break;
+                    default:
+                        await context.sendActivity(`Sorry I did not understand.`);
+                        break;
+                    }
                 conversationData.askedForDataProtection = false;
 
                 await next();
