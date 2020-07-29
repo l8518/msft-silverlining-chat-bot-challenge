@@ -90,18 +90,18 @@ class TeamsConversationBot extends TeamsActivityHandler {
             // If no answers were returned from QnA Maker, reply with help.
             } else {
 
-                // TODO: 
-                // intent handling
-                // with overview on commands (intent)
-                // with alternative of using the bing api?
-
-                // Next, enter the main dialogs, if no question in the q and b bot.
                 switch (intent) {
                     case 'anxiety':
                         await context.sendActivity(`It's okay to be afraid!`);
                         break;
-                    case 'data':
-                        await context.sendActivity(`It's okay to be afraid!`);
+                    case 'confused':
+                        await context.sendActivity(`It's okay to be confused!`);
+                        break;
+                    case 'isolation':
+                        await context.sendActivity(`It's okay to feel alone!`);
+                        break;
+                    case 'technical':
+                        await context.sendActivity(`I am built on Natural Language Understanding, Machine Learning and Awesome If-Logic 😎!`);
                         break;
                     case 'data_protection':
                         await this.processDataProtection(context, recognizerResult, conversationData);
@@ -111,7 +111,10 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
                         // TODO: Do something with bing?
                         console.log(`Dispatch unrecognized intent: ${ intent }.`);
-                        await context.sendActivity(`Dispatch unrecognized intent: ${ intent }.`);
+
+                        await context.sendActivity(`Sorry I did not understand you probably. However, I am still learning to understand you better! (feels like ${ intent }) \n However, see what I can do.`);
+
+                        // TODO: Show overview of commands (intent) + bing results
                         break;
                     }
             }
