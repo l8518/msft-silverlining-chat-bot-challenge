@@ -19,8 +19,7 @@ const TextEncoder = require('util').TextEncoder;
 
 class TeamsConversationBot extends TeamsActivityHandler {
 
-    anxietyMessages = [
-        { type: ActivityTypes.Message, text: 'Don\'t worry. Being anxious sometimes just shows that you care about your life :-)' },
+    anxietyMessages = [{ type: ActivityTypes.Message, text: 'Don\'t worry. Being anxious sometimes just shows that you care about your life :-)' },
         { type: ActivityTypes.Message, text: 'Maybe this helps?', attachments: [
             CardFactory.videoCard(
                 'A Recommended Ted Talk',
@@ -35,8 +34,7 @@ class TeamsConversationBot extends TeamsActivityHandler {
                     text: 'Anxiety is one of most prevalent mental health disorders, with 1 out of 14 people around the world being likely affected.'
                 }
             )
-        ] }
-    ]
+        ]}]
 
     confusedMessages = [
         { type: ActivityTypes.Message, text: 'Have a shower and trust me, the world turns upside down' },
@@ -44,23 +42,25 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
     isolationMessages = [
         { type: ActivityTypes.Message, text: 'You never walk alone!' },
-        { type: ActivityTypes.Message, text: 'Listen to this to calm down?', attachments: [
-            CardFactory.audioCard(
-                'You never walk alone',
-                ['http://www.theclassicharpist.com/YoullNeverWalkAlone.mp3'],
-                CardFactory.actions([
+        {
+            type: ActivityTypes.Message, text: 'Listen to this to calm down?', attachments: [
+                CardFactory.audioCard(
+                    'You never walk alone',
+                    ['http://www.theclassicharpist.com/YoullNeverWalkAlone.mp3'],
+                    CardFactory.actions([
+                        {
+                            type: 'openUrl',
+                            title: 'Read more',
+                            value: 'http://www.theclassicharpist.com/audio/youllneverwalkalone.html'
+                        }
+                    ]),
                     {
-                        type: 'openUrl',
-                        title: 'Read more',
-                        value: 'http://www.theclassicharpist.com/audio/youllneverwalkalone.html'
+                        subtitle: 'You never walk alone',
+                        text: 'Calm harp music'
                     }
-                ]),
-                {
-                    subtitle: 'You never walk alone',
-                    text: 'Calm harp music'
-                }
-            )
-        ] }
+                )
+            ]
+        }
     ]
 
     constructor(conversationState, userState) {
@@ -93,15 +93,15 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
         this.dispatchRecognizer = dispatchRecognizer;
         this.qnaMaker = qnaMaker;
-        
+
         this.onMessage(async (context, next) => {
             console.log('Processing Message Activity.');
 
             // Get the state properties from the turn context.
             const userProfile = await this.userProfileAccessor.get(context, {});
-            const conversationData = await this.conversationDataAccessor.get(context, 
+            const conversationData = await this.conversationDataAccessor.get(context,
                 { askedForDataProtection: false, seenAnxiety: [], seenConfused: [], seenIsolation: [] }
-                );
+            );
 
             // First, we use the dispatch model to determine which cognitive service (LUIS or QnA) to use.
             const qnaResults = await this.qnaMaker.getAnswers(context);
@@ -120,7 +120,7 @@ class TeamsConversationBot extends TeamsActivityHandler {
                     default:
                         await context.sendActivity(`Sorry I did not understand.`);
                         break;
-                    }
+                }
                 conversationData.askedForDataProtection = false;
 
                 await next();
@@ -131,7 +131,7 @@ class TeamsConversationBot extends TeamsActivityHandler {
             if (qnaResults[0]) {
                 await context.sendActivity(qnaResults[0].answer);
 
-            // If no answers were returned from QnA Maker, reply with help.
+                // If no answers were returned from QnA Maker, reply with help.
             } else {
                 switch (intent) {
                     case 'anxiety':
@@ -145,10 +145,10 @@ class TeamsConversationBot extends TeamsActivityHandler {
                             { type: 'delay', value: 1000 },
                             this.anxietyMessages[conversationData.seenAnxiety.pop()]
                         ]);
-                        
+
                         break;
                     case 'confused':
-                        
+
                         if (conversationData.seenConfused.length == 0) {
                             conversationData.seenConfused = this.getNewSequence(this.confusedMessages.length);
                         }
@@ -161,7 +161,7 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
                         break;
                     case 'isolation':
-                        
+
                         if (conversationData.seenIsolation.length == 0) {
                             conversationData.seenIsolation = this.getNewSequence(this.isolationMessages.length);
                         }
@@ -185,10 +185,10 @@ class TeamsConversationBot extends TeamsActivityHandler {
                         context.sendActivity({ attachments: [this.createThumbnailCard(recognizerResult.text)] });
                         await this.sendSuggestedActions2(context);
                         break;
-                    }
+                }
             }
             await next();
-            
+
         });
 
         this.onMembersAdded(async (context, next) => {
@@ -197,7 +197,7 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
             for (const member of membersAdded) {
                 if (member.id !== context.activity.recipient.id) {
-                    await context.sendActivity(`Welcome to Dispatch bot ${ member.name }. ${ welcomeText }`);
+                    await context.sendActivity(`Welcome to Dispatch bot ${member.name}. ${welcomeText}`);
                 }
             }
 
@@ -227,8 +227,8 @@ class TeamsConversationBot extends TeamsActivityHandler {
         await turnContext.sendActivity(reply);
     }
 
-    getNewSequence(N) {        
-        return this.shuffle(Array.apply(null, {length: N}).map(Number.call, Number))
+    getNewSequence(N) {
+        return this.shuffle(Array.apply(null, { length: N }).map(Number.call, Number))
     }
 
     /**
@@ -245,7 +245,7 @@ class TeamsConversationBot extends TeamsActivityHandler {
         }
         return a;
     }
-    async sendSuggestedActions2(turnContext){
+    async sendSuggestedActions2(turnContext) {
         var reply = MessageFactory.suggestedActions(['I feel anxious', 'I feel lonely', 'I am a bit overwhelmed.', 'I feel great.'], '');
         await turnContext.sendActivity(reply);
     }
@@ -256,7 +256,7 @@ class TeamsConversationBot extends TeamsActivityHandler {
             [{
                 type: 'openUrl',
                 title: 'Search with Bing',
-                value: 'https://www.bing.com/search?q='+ query
+                value: 'https://www.bing.com/search?q=' + query
             }],
             {
                 subtitle: 'We are continually learning and will support more.',
