@@ -9,7 +9,8 @@ const {
     TeamsInfo,
     TeamsActivityHandler,
     CardFactory,
-    ActionTypes
+    ActionTypes,
+    ActivityTypes
 } = require('botbuilder');
 const { LuisRecognizer, QnAMaker } = require('botbuilder-ai');
 
@@ -17,6 +18,50 @@ const { LuisRecognizer, QnAMaker } = require('botbuilder-ai');
 const TextEncoder = require('util').TextEncoder;
 
 class TeamsConversationBot extends TeamsActivityHandler {
+
+    anxietyMessages = [
+        { type: ActivityTypes.Message, text: 'Don\'t worry. Being anxious sometimes just shows that you care about your life :-)' },
+        { type: ActivityTypes.Message, text: 'Maybe this helps?', attachments: [
+            CardFactory.videoCard(
+                'A Recommended Ted Talk',
+                [{ url: 'https://www.youtube.com/watch?v=WWloIAQpMcQ' }],
+                [{
+                    type: 'openUrl',
+                    title: 'Lean More',
+                    value: 'https://www.youtube.com/watch?v=WWloIAQpMcQ'
+                }],
+                {
+                    subtitle: 'by TedX Talks',
+                    text: 'Anxiety is one of most prevalent mental health disorders, with 1 out of 14 people around the world being likely affected.'
+                }
+            )
+        ] }
+    ]
+
+    confusedMessages = [
+        { type: ActivityTypes.Message, text: 'Have a shower and trust me, the world turns upside down' },
+    ]
+
+    isolationMessages = [
+        { type: ActivityTypes.Message, text: 'You never walk alone!' },
+        { type: ActivityTypes.Message, text: 'Listen to this to calm down?', attachments: [
+            CardFactory.audioCard(
+                'You never walk alone',
+                ['http://www.theclassicharpist.com/YoullNeverWalkAlone.mp3'],
+                CardFactory.actions([
+                    {
+                        type: 'openUrl',
+                        title: 'Read more',
+                        value: 'http://www.theclassicharpist.com/audio/youllneverwalkalone.html'
+                    }
+                ]),
+                {
+                    subtitle: 'You never walk alone',
+                    text: 'Calm harp music'
+                }
+            )
+        ] }
+    ]
 
     constructor(conversationState, userState) {
         super();
@@ -54,7 +99,9 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
             // Get the state properties from the turn context.
             const userProfile = await this.userProfileAccessor.get(context, {});
-            const conversationData = await this.conversationDataAccessor.get(context, { askedForDataProtection: false });
+            const conversationData = await this.conversationDataAccessor.get(context, 
+                { askedForDataProtection: false, seenAnxiety: [], seenConfused: [], seenIsolation: [] }
+                );
 
             // First, we use the dispatch model to determine which cognitive service (LUIS or QnA) to use.
             const qnaResults = await this.qnaMaker.getAnswers(context);
@@ -92,13 +139,43 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
                 switch (intent) {
                     case 'anxiety':
-                        await context.sendActivity(`It's okay to be afraid!`);
+
+                        if (conversationData.seenAnxiety.length == 0) {
+                            conversationData.seenAnxiety = this.getNewSequence(this.anxietyMessages.length);
+                        }
+
+                        await context.sendActivities([
+                            { type: ActivityTypes.Typing },
+                            { type: 'delay', value: 1000 },
+                            this.anxietyMessages[conversationData.seenAnxiety.pop()]
+                        ]);
+                        
                         break;
                     case 'confused':
-                        await context.sendActivity(`It's okay to be confused!`);
+                        
+                        if (conversationData.seenConfused.length == 0) {
+                            conversationData.seenConfused = this.getNewSequence(this.confusedMessages.length);
+                        }
+
+                        await context.sendActivities([
+                            { type: ActivityTypes.Typing },
+                            { type: 'delay', value: 1000 },
+                            this.confusedMessages[conversationData.seenConfused.pop()]
+                        ]);
+
                         break;
                     case 'isolation':
-                        await context.sendActivity(`It's okay to feel alone!`);
+                        
+                        if (conversationData.seenIsolation.length == 0) {
+                            conversationData.seenIsolation = this.getNewSequence(this.isolationMessages.length);
+                        }
+
+                        await context.sendActivities([
+                            { type: ActivityTypes.Typing },
+                            { type: 'delay', value: 1000 },
+                            this.isolationMessages[conversationData.seenIsolation.pop()]
+                        ]);
+
                         break;
                     case 'technical':
                         await context.sendActivity(`I am built on Natural Language Understanding, Machine Learning and Awesome If-Logic 😎!`);
@@ -159,6 +236,24 @@ class TeamsConversationBot extends TeamsActivityHandler {
         await turnContext.sendActivity(reply);
     }
 
+    getNewSequence(N) {        
+        return this.shuffle(Array.apply(null, {length: N}).map(Number.call, Number))
+    }
+
+    /**
+     * Shuffles array in place.
+     * @param {Array} a items An array containing the items.
+     */
+    shuffle(a) {
+        var j, x, i;
+        for (i = a.length - 1; i > 0; i--) {
+            j = Math.floor(Math.random() * (i + 1));
+            x = a[i];
+            a[i] = a[j];
+            a[j] = x;
+        }
+        return a;
+    }
 }
 
 module.exports.TeamsConversationBot = TeamsConversationBot;
