@@ -10,9 +10,10 @@ dotenv.config({ path: ENV_FILE });
 
 const restify = require('restify');
 
+
 // Import required bot services.
 // See https://aka.ms/bot-services to learn more about the different parts of a bot.
-const { BotFrameworkAdapter } = require('botbuilder');
+const { BotFrameworkAdapter, MemoryStorage, ConversationState, UserState } = require('botbuilder');
 
 // This bot's main dialog.
 const { TeamsConversationBot } = require('./bot');
@@ -34,6 +35,14 @@ const adapter = new BotFrameworkAdapter({
     openIdMetadata: process.env.BotOpenIdMetadata
 });
 
+// Define state store for your bot.
+// See https://aka.ms/about-bot-state to learn more about bot state.
+const memoryStorage = new MemoryStorage();
+
+// Create conversation and user state with in-memory storage provider.
+const conversationState = new ConversationState(memoryStorage);
+const userState = new UserState(memoryStorage);
+
 adapter.onTurnError = async (context, error) => {
     // This check writes out errors to console log .vs. app insights.
     // NOTE: In production environment, you should consider logging this to Azure
@@ -54,8 +63,9 @@ adapter.onTurnError = async (context, error) => {
     await context.sendActivity('To continue to run this bot, please fix the bot source code.');
 };
 
+
 // Create the bot that will handle incoming messages.
-const bot = new TeamsConversationBot();
+const bot = new TeamsConversationBot(conversationState, userState);
 
 // Listen for incoming requests.
 server.post('/api/messages', (req, res) => {

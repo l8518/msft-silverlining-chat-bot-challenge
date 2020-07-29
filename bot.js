@@ -1,5 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
+const CONVERSATION_DATA_PROPERTY = 'conversationData';
+const USER_PROFILE_PROPERTY = 'userProfile';
 
 const {
     TurnContext,
@@ -15,8 +17,17 @@ const { LuisRecognizer, QnAMaker } = require('botbuilder-ai');
 const TextEncoder = require('util').TextEncoder;
 
 class TeamsConversationBot extends TeamsActivityHandler {
-    constructor() {
+
+    constructor(conversationState, userState) {
         super();
+
+        // The state management objects for the conversation and user state.
+        this.conversationState = conversationState;
+        this.userState = userState;
+
+        // Create the state property accessors for the conversation data and user profile.
+        this.conversationDataAccessor = conversationState.createProperty(CONVERSATION_DATA_PROPERTY);
+        this.userProfileAccessor = userState.createProperty(USER_PROFILE_PROPERTY);
 
         // If the includeApiResults parameter is set to true, as shown below, the full response
         // from the LUIS api will be made available in the properties  of the RecognizerResult
@@ -37,14 +48,30 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
         this.dispatchRecognizer = dispatchRecognizer;
         this.qnaMaker = qnaMaker;
-
+        
         this.onMessage(async (context, next) => {
             console.log('Processing Message Activity.');
+
+            // Get the state properties from the turn context.
+            const userProfile = await this.userProfileAccessor.get(context, {});
+            const conversationData = await this.conversationDataAccessor.get(context, { askedForDataProtection: false });
 
             // First, we use the dispatch model to determine which cognitive service (LUIS or QnA) to use.
             const qnaResults = await this.qnaMaker.getAnswers(context);
             const recognizerResult = await dispatchRecognizer.recognize(context);
             const intent = LuisRecognizer.topIntent(recognizerResult);
+
+            
+            // If Asked Data Protection:
+            if (conversationData.askedForDataProtection) {
+
+                await context.sendActivity(`you selected yes: ${ intent }.`);
+                conversationData.askedForDataProtection = false;
+
+                await next();
+                return;
+
+            }
 
             // If an answer was received from QnA Maker, send the answer back to the user.
             if (qnaResults[0]) {
@@ -63,6 +90,13 @@ class TeamsConversationBot extends TeamsActivityHandler {
                     case 'anxiety':
                         await context.sendActivity(`It's okay to be afraid!`);
                         break;
+                    case 'data':
+                        await context.sendActivity(`It's okay to be afraid!`);
+                        break;
+                    case 'data_protection':
+                        await this.processDataProtection(context, recognizerResult, conversationData);
+                        break;
+
                     default:
 
                         // TODO: Do something with bing?
@@ -88,6 +122,28 @@ class TeamsConversationBot extends TeamsActivityHandler {
             // By calling next() you ensure that the next BotHandler is run.
             await next();
         });
+    }
+
+    async processDataProtection(context, luisResult, conversationData) {
+        
+        // Retrieve LUIS result for Process Automation.
+        const result = luisResult.connectedServiceResult;
+        const intent = LuisRecognizer.topIntent(luisResult);
+
+        conversationData.askedForDataProtection = true;
+
+        await context.sendActivity(`HomeAutomation entities were found in the message: ${ luisResult }.`);
+    }
+
+    /**
+     * Override the ActivityHandler.run() method to save state changes after the bot logic completes.
+     */
+    async run(context) {
+        await super.run(context);
+
+        // Save any state changes. The load happened during the execution of the Dialog.
+        await this.conversationState.saveChanges(context, false);
+        await this.userState.saveChanges(context, false);
     }
 
 }
