@@ -9,174 +9,136 @@ const {
     CardFactory,
     ActionTypes
 } = require('botbuilder');
+const { LuisRecognizer, QnAMaker } = require('botbuilder-ai');
+
+
 const TextEncoder = require('util').TextEncoder;
 
 class TeamsConversationBot extends TeamsActivityHandler {
     constructor() {
         super();
-        this.onMessage(async (context, next) => {
-            TurnContext.removeRecipientMention(context.activity);
 
-            const text = context.activity.text.trim().toLocaleLowerCase();
-            if (text.includes('mention')) {
-                await this.mentionActivityAsync(context);
-            } else if (text.includes('update')) {
-                await this.cardActivityAsync(context, true);
-            } else if (text.includes('delete')) {
-                await this.deleteCardActivityAsync(context);
-            } else if (text.includes('message')) {
-                await this.messageAllMembersAsync(context);
-            } else if (text.includes('who')) {
-                await this.getSingleMember(context);
-            } else {
-                await this.cardActivityAsync(context, false);
-            }
+        console.log('test - 2')
+        console.log(process.env)
+
+        // If the includeApiResults parameter is set to true, as shown below, the full response
+        // from the LUIS api will be made available in the properties  of the RecognizerResult
+        const dispatchRecognizer = new LuisRecognizer({
+            applicationId: process.env.LuisAppId,
+            endpointKey: process.env.LuisAPIKey,
+            endpoint: `https://${process.env.LuisAPIHostName}.api.cognitive.microsoft.com`
+        }, {
+            includeAllIntents: true,
+            includeInstanceData: true
+        }, true);
+
+        console.log('test - 3')
+
+        const qnaMaker = new QnAMaker({
+            knowledgeBaseId: process.env.QnAKnowledgebaseId,
+            endpointKey: process.env.QnAEndpointKey,
+            host: process.env.QnAEndpointHostName
         });
 
-        this.onMembersAddedActivity(async (context, next) => {
-            context.activity.membersAdded.forEach(async (teamMember) => {
-                if (teamMember.id !== context.activity.recipient.id) {
-                    await context.sendActivity(`Welcome to the team ${ teamMember.givenName } ${ teamMember.surname }`);
+        console.log('test - 4')
+
+        this.dispatchRecognizer = dispatchRecognizer;
+        this.qnaMaker = qnaMaker;
+
+        this.onMessage(async (context, next) => {
+            console.log('Processing Message Activity.');
+
+            // First, we use the dispatch model to determine which cognitive service (LUIS or QnA) to use.
+            const recognizerResult = await dispatchRecognizer.recognize(context);
+            
+            console.log('reocni')
+
+            // Top intent tell us which cognitive service to use.
+            const intent = LuisRecognizer.topIntent(recognizerResult);
+
+            // Next, we call the dispatcher with the top intent.
+            await this.dispatchToTopIntentAsync(context, intent, recognizerResult);
+
+            await next();
+        });
+
+        this.onMembersAdded(async (context, next) => {
+            const welcomeText = 'Type a greeting or a question about the weather to get started.';
+            const membersAdded = context.activity.membersAdded;
+
+            for (const member of membersAdded) {
+                if (member.id !== context.activity.recipient.id) {
+                    await context.sendActivity(`Welcome to Dispatch bot ${ member.name }. ${ welcomeText }`);
                 }
-            });
+            }
+
+            // By calling next() you ensure that the next BotHandler is run.
             await next();
         });
     }
 
-    async cardActivityAsync(context, isUpdate) {
-        const cardActions = [
-            {
-                type: ActionTypes.MessageBack,
-                title: 'Message all members',
-                value: null,
-                text: 'MessageAllMembers'
-            },
-            {
-                type: ActionTypes.MessageBack,
-                title: 'Who am I?',
-                value: null,
-                text: 'whoami'
-            },
-            {
-                type: ActionTypes.MessageBack,
-                title: 'Delete card',
-                value: null,
-                text: 'Delete'
-            }
-        ];
+    async dispatchToTopIntentAsync(context, intent, recognizerResult) {
 
-        if (isUpdate) {
-            await this.sendUpdateCard(context, cardActions);
+        console.log(intent)
+
+        switch (intent) {
+        case 'l_GrowthBot':
+            await this.processWeather(context, recognizerResult.luisResult);
+            break;
+        case 'q_psychology-kb':
+            await this.processSampleQnA(context);
+            break;
+        case 'q_psychology-kb-energy':
+            await this.processSampleQnA(context);
+            break;
+        default:
+            console.log(`Dispatch unrecognized intent: ${ intent }.`);
+            await context.sendActivity(`Dispatch unrecognized intent: ${ intent }.`);
+            break;
+        }
+    }
+
+    async processHomeAutomation(context, luisResult) {
+        console.log('processHomeAutomation');
+
+        // Retrieve LUIS result for Process Automation.
+        const result = luisResult.connectedServiceResult;
+        const intent = result.topScoringIntent.intent;
+
+        await context.sendActivity(`HomeAutomation top intent ${ intent }.`);
+        await context.sendActivity(`HomeAutomation intents detected:  ${ luisResult.intents.map((intentObj) => intentObj.intent).join('\n\n') }.`);
+
+        if (luisResult.entities.length > 0) {
+            await context.sendActivity(`HomeAutomation entities were found in the message: ${ luisResult.entities.map((entityObj) => entityObj.entity).join('\n\n') }.`);
+        }
+    }
+
+    async processWeather(context, luisResult) {
+        console.log('processWeather');
+
+        // Retrieve LUIS results for Weather.
+        const result = luisResult.connectedServiceResult;
+        const topIntent = result.topScoringIntent.intent;
+
+        await context.sendActivity(`ProcessWeather top intent ${ topIntent }.`);
+        await context.sendActivity(`ProcessWeather intents detected:  ${ luisResult.intents.map((intentObj) => intentObj.intent).join('\n\n') }.`);
+
+        if (luisResult.entities.length > 0) {
+            await context.sendActivity(`ProcessWeather entities were found in the message: ${ luisResult.entities.map((entityObj) => entityObj.entity).join('\n\n') }.`);
+        }
+    }
+
+    async processSampleQnA(context) {
+        console.log('processSampleQnA');
+
+        const results = await this.qnaMaker.getAnswers(context);
+
+        console.log('res', results)
+        if (results.length > 0) {
+            await context.sendActivity(`${ results[0].answer }`);
         } else {
-            await this.sendWelcomeCard(context, cardActions);
+            await context.sendActivity('Sorry, could not find an answer in the Q and A system.');
         }
-    }
-
-    async sendUpdateCard(context, cardActions) {
-        const data = context.activity.value;
-        data.count += 1;
-        cardActions.push({
-            type: ActionTypes.MessageBack,
-            title: 'Update Card',
-            value: data,
-            text: 'UpdateCardAction'
-        });
-        const card = CardFactory.heroCard(
-            'Updated card',
-            `Update count: ${ data.count }`,
-            null,
-            cardActions
-        );
-        card.id = context.activity.replyToId;
-        const message = MessageFactory.attachment(card);
-        message.id = context.activity.replyToId;
-        await context.updateActivity(message);
-    }
-
-    async sendWelcomeCard(context, cardActions) {
-        const initialValue = {
-            count: 0
-        };
-        cardActions.push({
-            type: ActionTypes.MessageBack,
-            title: 'Update Card',
-            value: initialValue,
-            text: 'UpdateCardAction'
-        });
-        const card = CardFactory.heroCard(
-            'Welcome card',
-            '',
-            null,
-            cardActions
-        );
-        await context.sendActivity(MessageFactory.attachment(card));
-    }
-
-    async getSingleMember(context) {
-        var member;
-        try {
-            member = await TeamsInfo.getMember(context, context.activity.from.id);
-        } catch (e) {
-            if (e.code === 'MemberNotFoundInConversation') {
-                context.sendActivity(MessageFactory.text('Member not found.'));
-                return;
-            } else {
-                console.log(e);
-                throw e;
-            }
-        }
-        const message = MessageFactory.text(`You are: ${ member.name }`);
-        await context.sendActivity(message);
-    }
-
-    async mentionActivityAsync(context) {
-        const mention = {
-            mentioned: context.activity.from,
-            text: `<at>${ new TextEncoder().encode(context.activity.from.name) }</at>`,
-            type: 'mention'
-        };
-
-        const replyActivity = MessageFactory.text(`Hi ${ mention.text }`);
-        replyActivity.entities = [mention];
-        await context.sendActivity(replyActivity);
-    }
-
-    async deleteCardActivityAsync(context) {
-        await context.deleteActivity(context.activity.replyToId);
-    }
-
-    // If you encounter permission-related errors when sending this message, see
-    // https://aka.ms/BotTrustServiceUrl
-    async messageAllMembersAsync(context) {
-        const members = await this.getPagedMembers(context);
-
-        members.forEach(async (teamMember) => {
-            const message = MessageFactory.text(`Hello ${ teamMember.givenName } ${ teamMember.surname }. I'm a Teams conversation bot.`);
-
-            var ref = TurnContext.getConversationReference(context.activity);
-            ref.user = teamMember;
-
-            await context.adapter.createConversation(ref,
-                async (t1) => {
-                    const ref2 = TurnContext.getConversationReference(t1.activity);
-                    await t1.adapter.continueConversation(ref2, async (t2) => {
-                        await t2.sendActivity(message);
-                    });
-                });
-        });
-
-        await context.sendActivity(MessageFactory.text('All messages have been sent.'));
-    }
-
-    async getPagedMembers(context) {
-        var continuationToken;
-        var members = [];
-        do {
-            var pagedMembers = await TeamsInfo.getPagedMembers(context, 100, continuationToken);
-            continuationToken = pagedMembers.continuationToken;
-            members.push(...pagedMembers.members);
-        } while (continuationToken !== undefined);
-        return members;
     }
 }
 
