@@ -197,7 +197,7 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
             for (const member of membersAdded) {
                 if (member.id !== context.activity.recipient.id) {
-                    await context.sendActivity(`Welcome to Dispatch bot ${member.name}. ${welcomeText}`);
+                    await context.sendActivity(`Welcome to the Growth Bot! 🐱‍👤`);
                 }
             }
 
