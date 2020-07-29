@@ -49,17 +49,35 @@ class TeamsConversationBot extends TeamsActivityHandler {
             console.log('Processing Message Activity.');
 
             // First, we use the dispatch model to determine which cognitive service (LUIS or QnA) to use.
-            const recognizerResult = await dispatchRecognizer.recognize(context);
+            //const recognizerResult = await dispatchRecognizer.recognize(context);
+            const qnaResults = await this.qnaMaker.getAnswers(context);
             
             console.log('reocni')
 
-            // Top intent tell us which cognitive service to use.
-            const intent = LuisRecognizer.topIntent(recognizerResult);
+            // // Top intent tell us which cognitive service to use.
+            // const intent = LuisRecognizer.topIntent(recognizerResult);
 
-            // Next, we call the dispatcher with the top intent.
-            await this.dispatchToTopIntentAsync(context, intent, recognizerResult);
+            // // Next, we call the dispatcher with the top intent.
+            // await this.dispatchToTopIntentAsync(context, intent, recognizerResult);
 
+            // await next();
+
+            // If an answer was received from QnA Maker, send the answer back to the user.
+            if (qnaResults[0]) {
+                // await this.getSingleMember(context, qnaResults[0].answer);
+                await context.sendActivity(qnaResults[0].answer);
+                // await context.sendActivity(qnaResults[0].answer);
+
+            // If no answers were returned from QnA Maker, reply with help.
+            } else {
+
+                //luis and bing api
+
+                await context.sendActivity('No QnA Maker answers were found.');
+                // await this.getSingleMember(context, 'No QnA Maker answers were found.');
+            }
             await next();
+            
         });
 
         this.onMembersAdded(async (context, next) => {
@@ -85,7 +103,7 @@ class TeamsConversationBot extends TeamsActivityHandler {
         case 'l_GrowthBot':
             await this.processWeather(context, recognizerResult.luisResult);
             break;
-        case 'q_psychology-kb':
+        case 'q_psychology':
             await this.processSampleQnA(context);
             break;
         case 'q_psychology-kb-energy':
