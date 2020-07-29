@@ -17,51 +17,51 @@ const { LuisRecognizer, QnAMaker } = require('botbuilder-ai');
 
 const TextEncoder = require('util').TextEncoder;
 
-class TeamsConversationBot extends TeamsActivityHandler {
-
-    anxietyMessages = [{ type: ActivityTypes.Message, text: 'Don\'t worry. Being anxious sometimes just shows that you care about your life :-)' },
-        { type: ActivityTypes.Message, text: 'Maybe this helps?', attachments: [
-            CardFactory.videoCard(
-                'A Recommended Ted Talk',
-                [{ url: 'https://www.youtube.com/watch?v=WWloIAQpMcQ' }],
-                [{
-                    type: 'openUrl',
-                    title: 'Lean More',
-                    value: 'https://www.youtube.com/watch?v=WWloIAQpMcQ'
-                }],
-                {
-                    subtitle: 'by TedX Talks',
-                    text: 'Anxiety is one of most prevalent mental health disorders, with 1 out of 14 people around the world being likely affected.'
-                }
-            )
-        ]}]
-
-    confusedMessages = [
-        { type: ActivityTypes.Message, text: 'Have a shower and trust me, the world turns upside down' },
-    ]
-
-    isolationMessages = [
-        { type: ActivityTypes.Message, text: 'You never walk alone!' },
+const anxietyMessages = [{ type: ActivityTypes.Message, text: 'Don\'t worry. Being anxious sometimes just shows that you care about your life :-)' },
+{ type: ActivityTypes.Message, text: 'Maybe this helps?', attachments: [
+    CardFactory.videoCard(
+        'A Recommended Ted Talk',
+        [{ url: 'https://www.youtube.com/watch?v=WWloIAQpMcQ' }],
+        [{
+            type: 'openUrl',
+            title: 'Lean More',
+            value: 'https://www.youtube.com/watch?v=WWloIAQpMcQ'
+        }],
         {
-            type: ActivityTypes.Message, text: 'Listen to this to calm down?', attachments: [
-                CardFactory.audioCard(
-                    'You never walk alone',
-                    ['http://www.theclassicharpist.com/YoullNeverWalkAlone.mp3'],
-                    CardFactory.actions([
-                        {
-                            type: 'openUrl',
-                            title: 'Read more',
-                            value: 'http://www.theclassicharpist.com/audio/youllneverwalkalone.html'
-                        }
-                    ]),
-                    {
-                        subtitle: 'You never walk alone',
-                        text: 'Calm harp music'
-                    }
-                )
-            ]
+            subtitle: 'by TedX Talks',
+            text: 'Anxiety is one of most prevalent mental health disorders, with 1 out of 14 people around the world being likely affected.'
         }
+    )
+]}]
+
+const confusedMessages = [
+{ type: ActivityTypes.Message, text: 'Have a shower and trust me, the world turns upside down' },
+]
+
+const isolationMessages = [
+{ type: ActivityTypes.Message, text: 'You never walk alone!' },
+{
+    type: ActivityTypes.Message, text: 'Listen to this to calm down?', attachments: [
+        CardFactory.audioCard(
+            'You never walk alone',
+            ['http://www.theclassicharpist.com/YoullNeverWalkAlone.mp3'],
+            CardFactory.actions([
+                {
+                    type: 'openUrl',
+                    title: 'Read more',
+                    value: 'http://www.theclassicharpist.com/audio/youllneverwalkalone.html'
+                }
+            ]),
+            {
+                subtitle: 'You never walk alone',
+                text: 'Calm harp music'
+            }
+        )
     ]
+}
+]
+
+class TeamsConversationBot extends TeamsActivityHandler {
 
     constructor(conversationState, userState) {
         super();
@@ -137,39 +137,39 @@ class TeamsConversationBot extends TeamsActivityHandler {
                     case 'anxiety':
 
                         if (conversationData.seenAnxiety.length == 0) {
-                            conversationData.seenAnxiety = this.getNewSequence(this.anxietyMessages.length);
+                            conversationData.seenAnxiety = this.getNewSequence(anxietyMessages.length);
                         }
 
                         await context.sendActivities([
                             { type: ActivityTypes.Typing },
                             { type: 'delay', value: 1000 },
-                            this.anxietyMessages[conversationData.seenAnxiety.pop()]
+                            anxietyMessages[conversationData.seenAnxiety.pop()]
                         ]);
 
                         break;
                     case 'confused':
 
                         if (conversationData.seenConfused.length == 0) {
-                            conversationData.seenConfused = this.getNewSequence(this.confusedMessages.length);
+                            conversationData.seenConfused = this.getNewSequence(confusedMessages.length);
                         }
 
                         await context.sendActivities([
                             { type: ActivityTypes.Typing },
                             { type: 'delay', value: 1000 },
-                            this.confusedMessages[conversationData.seenConfused.pop()]
+                            confusedMessages[conversationData.seenConfused.pop()]
                         ]);
 
                         break;
                     case 'isolation':
 
                         if (conversationData.seenIsolation.length == 0) {
-                            conversationData.seenIsolation = this.getNewSequence(this.isolationMessages.length);
+                            conversationData.seenIsolation = this.getNewSequence(isolationMessages.length);
                         }
 
                         await context.sendActivities([
                             { type: ActivityTypes.Typing },
                             { type: 'delay', value: 1000 },
-                            this.isolationMessages[conversationData.seenIsolation.pop()]
+                            isolationMessages[conversationData.seenIsolation.pop()]
                         ]);
 
                         break;
