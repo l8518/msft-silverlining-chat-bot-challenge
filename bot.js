@@ -64,7 +64,7 @@ class TeamsConversationBot extends TeamsActivityHandler {
             
             // If Asked Data Protection:
             if (conversationData.askedForDataProtection) {
-
+                console.log(intent)
                 switch (intent) {
                     case 'yes':
                         await context.sendActivity(`Okay, I will delete all personal data related to you!`);
@@ -104,14 +104,15 @@ class TeamsConversationBot extends TeamsActivityHandler {
                         await context.sendActivity(`I am built on Natural Language Understanding, Machine Learning and Awesome If-Logic 😎!`);
                         break;
                     case 'data_protection':
-                        await this.processDataProtection(context, recognizerResult, conversationData);
+                        conversationData.askedForDataProtection = true;
+                        await this.sendSuggestedActions(context);
+                        //await this.processDataProtection(context, recognizerResult, conversationData);
                         break;
 
                     default:
 
                         // TODO: Do something with bing?
                         console.log(`Dispatch unrecognized intent: ${ intent }.`);
-
                         await context.sendActivity(`Sorry I did not understand you probably. However, I am still learning to understand you better! (feels like ${ intent }) \n However, see what I can do.`);
 
                         // TODO: Show overview of commands (intent) + bing results
@@ -137,16 +138,6 @@ class TeamsConversationBot extends TeamsActivityHandler {
         });
     }
 
-    async processDataProtection(context, luisResult, conversationData) {
-        
-        // Retrieve LUIS result for Process Automation.
-        const result = luisResult.connectedServiceResult;
-        const intent = LuisRecognizer.topIntent(luisResult);
-
-        conversationData.askedForDataProtection = true;
-
-        await context.sendActivity(`HomeAutomation entities were found in the message: ${ luisResult }.`);
-    }
 
     /**
      * Override the ActivityHandler.run() method to save state changes after the bot logic completes.
@@ -157,6 +148,15 @@ class TeamsConversationBot extends TeamsActivityHandler {
         // Save any state changes. The load happened during the execution of the Dialog.
         await this.conversationState.saveChanges(context, false);
         await this.userState.saveChanges(context, false);
+    }
+
+    /**
+     * Send suggested actions to the user.
+     * @param {TurnContext} turnContext A TurnContext instance containing all the data needed for processing this conversation turn.
+     */
+    async sendSuggestedActions(turnContext) {
+        var reply = MessageFactory.suggestedActions(['Yes, please!', 'No, thank you!'], 'Yes we do comply with GDPR. Do you want to delete all your personal data?');
+        await turnContext.sendActivity(reply);
     }
 
 }
