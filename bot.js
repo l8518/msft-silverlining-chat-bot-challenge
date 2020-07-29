@@ -157,7 +157,7 @@ class TeamsConversationBot extends TeamsActivityHandler {
     createThumbnailCard(query) {
         return CardFactory.thumbnailCard(
             'GrowthBot could not support you',
-            [{ url: 'https://sec.ch9.ms/ch9/7ff5/e07cfef0-aa3b-40bb-9baa-7c9ef8ff7ff5/buildreactionbotframework_960.jpg' }],
+            [{ url: 'https://github.com/l8518/msft-silverlining-chat-bot-challenge/raw/master/GrowthBotLogo.png' }],
             [{
                 type: 'openUrl',
                 title: 'Search with Bing',
