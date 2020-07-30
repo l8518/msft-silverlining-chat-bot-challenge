@@ -3,6 +3,7 @@
 const CONVERSATION_DATA_PROPERTY = 'conversationData';
 const USER_PROFILE_PROPERTY = 'userProfile';
 
+
 const {
     TurnContext,
     MessageFactory,
@@ -12,6 +13,16 @@ const {
     ActionTypes
 } = require('botbuilder');
 const { LuisRecognizer, QnAMaker } = require('botbuilder-ai');
+const generalResponse = require('./bots/mediaResponses/generalResponse.js');
+const processGenMess = require('./bots/mainDialog');
+
+// const https = require('https');
+// const SUBSCRIPTION_KEY = process.env['AZURE_SUBSCRIPTION_KEY']
+// if (!SUBSCRIPTION_KEY) {
+//   throw new Error('Missing the AZURE_SUBSCRIPTION_KEY environment variable')
+// }
+
+
 
 
 const TextEncoder = require('util').TextEncoder;
@@ -92,16 +103,19 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
                 switch (intent) {
                     case 'anxiety':
-                        await context.sendActivity(`It's okay to be afraid!`);
+                        await processGenMess(context, generalResponse.anxiety[0]);
+                        // await context.sendActivity(`It's okay to be afraid!`);
                         break;
                     case 'confused':
-                        await context.sendActivity(`It's okay to be confused!`);
+                        // await context.sendActivity(`It's okay to be confused!`);
                         break;
                     case 'isolation':
-                        await context.sendActivity(`It's okay to feel alone!`);
+                        await processGenMess(context, generalResponse.isolation[0]);
+                        // await context.sendActivity(`It's okay to feel alone!`);
                         break;
                     case 'technical':
-                        await context.sendActivity(`I am built on Natural Language Understanding, Machine Learning and Awesome If-Logic 😎!`);
+                        await processGenMess(context, generalResponse.technical[0]);
+                        // await context.sendActivity(`I am built on Natural Language Understanding, Machine Learning and Awesome If-Logic 😎!`);
                         break;
                     case 'data_protection':
                         await this.processDataProtection(context, recognizerResult, conversationData);
@@ -111,8 +125,9 @@ class TeamsConversationBot extends TeamsActivityHandler {
 
                         // TODO: Do something with bing?
                         console.log(`Dispatch unrecognized intent: ${ intent }.`);
-
-                        await context.sendActivity(`Sorry I did not understand you probably. However, I am still learning to understand you better! (feels like ${ intent }) \n However, see what I can do.`);
+                        // this.bingWebSearch(context.activity.text);
+                        await processGenMess(context, generalResponse.other[0]);
+                        // await context.sendActivity(`Sorry I did not understand you probably. However, I am still learning to understand you better! (feels like ${ intent }) \n However, see what I can do.`);
 
                         // TODO: Show overview of commands (intent) + bing results
                         break;
@@ -158,6 +173,40 @@ class TeamsConversationBot extends TeamsActivityHandler {
         await this.conversationState.saveChanges(context, false);
         await this.userState.saveChanges(context, false);
     }
+
+    // async bingWebSearch(query) {
+    //     try{
+    //         https.get({
+    //             hostname: 'api.cognitive.microsoft.com',
+    //             path:     '/bing/v7.0/search?q=' + encodeURIComponent(query),
+    //             headers:  { 'Ocp-Apim-Subscription-Key': SUBSCRIPTION_KEY },
+    //           }, res => {
+    //             //   console.log(res);
+    //             //   return res;
+    //             let body = ''
+    //             res.on('data', part => body += part)
+    //             res.on('end', () => {
+    //               for (var header in res.headers) {
+    //                 if (header.startsWith("bingapis-") || header.startsWith("x-msedge-")) {
+    //                   console.log(header + ": " + res.headers[header])
+    //                 }
+    //               }
+    //               console.log('\nJSON Response:\n')
+
+    //               console.dir(JSON.parse(body), { colors: false, depth: null })
+    //             })
+    //             return body;
+    //             // res.on('error', e => {
+    //             //   console.log('Error: ' + e.message)
+    //             //   throw e
+    //             // })
+    //         })
+    //     }
+    //     catch(e){
+    //         return "Sorry, I cannot find anything on Bing either :("
+    //     }
+        
+    //   }
 
 }
 
